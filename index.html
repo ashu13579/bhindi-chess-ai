@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bhindi Chess AI - Play Against AI</title>
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 600px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .board-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: fadeIn 1s ease;
+        }
+
+        #myBoard {
+            margin: 0 auto;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .info-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: fadeInRight 1s ease;
+        }
+
+        .ai-thinking {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: fadeInLeft 1s ease;
+        }
+
+        .panel-title {
+            color: #667eea;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            font-weight: 700;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .status {
+            color: #333;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f0f4ff;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .thinking-box {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+            color: #333;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+            border: 2px solid #e0e7ff;
+        }
+
+        .thinking-step {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+            animation: slideIn 0.3s ease;
+        }
+
+        .thinking-step.analyzing {
+            border-left-color: #f59e0b;
+        }
+
+        .thinking-step.evaluating {
+            border-left-color: #10b981;
+        }
+
+        .thinking-step.deciding {
+            border-left-color: #ef4444;
+        }
+
+        .move-history {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            color: #333;
+            margin-top: 15px;
+        }
+
+        .move-item {
+            padding: 8px;
+            margin-bottom: 5px;
+            background: white;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInLeft {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes fadeInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-box {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            color: #333;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 1200px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>♟️ Bhindi Chess AI</h1>
+            <p class="subtitle">Play against AI and watch how it thinks!</p>
+        </header>
+
+        <div class="game-container">
+            <div class="ai-thinking">
+                <h2 class="panel-title">🧠 AI Thinking Process</h2>
+                <div class="thinking-box" id="thinkingBox">
+                    <div class="thinking-step">Waiting for game to start...</div>
+                </div>
+            </div>
+
+            <div class="board-section">
+                <div id="myBoard"></div>
+                <div class="controls">
+                    <button onclick="newGame()">🎮 New Game</button>
+                    <button onclick="undoMove()">↩️ Undo Move</button>
+                    <button onclick="toggleDifficulty()">⚙️ Difficulty: <span id="difficultyLevel">Medium</span></button>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <h2 class="panel-title">📊 Game Info</h2>
+                <div class="status" id="status">White to move</div>
+                
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="moveCount">0</div>
+                        <div class="stat-label">Moves</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="capturedPieces">0</div>
+                        <div class="stat-label">Captures</div>
+                    </div>
+                </div>
+
+                <h3 class="panel-title" style="margin-top: 20px; font-size: 1.2em;">📜 Move History</h3>
+                <div class="move-history" id="moveHistory">
+                    <div style="text-align: center; color: #999;">No moves yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script>
+        var board = null;
+        var game = new Chess();
+        var difficulty = 2; // 1: Easy, 2: Medium, 3: Hard
+        var moveCount = 0;
+        var capturedCount = 0;
+        var moveHistory = [];
+
+        function updateStatus() {
+            var status = '';
+            var moveColor = 'White';
+            if (game.turn() === 'b') {
+                moveColor = 'Black';
+            }
+
+            if (game.in_checkmate()) {
+                status = 'Game over, ' + moveColor + ' is in checkmate.';
+            } else if (game.in_draw()) {
+                status = 'Game over, drawn position';
+            } else {
+                status = moveColor + ' to move';
+                if (game.in_check()) {
+                    status += ', ' + moveColor + ' is in check';
+                }
+            }
+
+            $('#status').html(status);
+            $('#moveCount').text(moveCount);
+            $('#capturedPieces').text(capturedCount);
+        }
+
+        function addThinkingStep(message, type = '') {
+            var thinkingBox = $('#thinkingBox');
+            var stepClass = type ? 'thinking-step ' + type : 'thinking-step';
+            thinkingBox.append('<div class="' + stepClass + '">' + message + '</div>');
+            thinkingBox.scrollTop(thinkingBox[0].scrollHeight);
+        }
+
+        function clearThinking() {
+            $('#thinkingBox').html('');
+        }
+
+        function evaluateBoard() {
+            var totalEvaluation = 0;
+            var board = game.board();
+            
+            for (var i = 0; i < 8; i++) {
+                for (var j = 0; j < 8; j++) {
+                    if (board[i][j]) {
+                        totalEvaluation += getPieceValue(board[i][j]);
+                    }
+                }
+            }
+            return totalEvaluation;
+        }
+
+        function getPieceValue(piece) {
+            if (piece === null) return 0;
+            
+            var values = {
+                'p': 10, 'n': 30, 'b': 30, 'r': 50, 'q': 90, 'k': 900
+            };
+            
+            var value = values[piece.type];
+            return piece.color === 'w' ? value : -value;
+        }
+
+        function minimax(depth, alpha, beta, isMaximizingPlayer) {
+            if (depth === 0) {
+                return -evaluateBoard();
+            }
+
+            var possibleMoves = game.moves();
+
+            if (isMaximizingPlayer) {
+                var bestMove = -9999;
+                for (var i = 0; i < possibleMoves.length; i++) {
+                    game.move(possibleMoves[i]);
+                    bestMove = Math.max(bestMove, minimax(depth - 1, alpha, beta, !isMaximizingPlayer));
+                    game.undo();
+                    alpha = Math.max(alpha, bestMove);
+                    if (beta <= alpha) {
+                        return bestMove;
+                    }
+                }
+                return bestMove;
+            } else {
+                var bestMove = 9999;
+                for (var i = 0; i < possibleMoves.length; i++) {
+                    game.move(possibleMoves[i]);
+                    bestMove = Math.min(bestMove, minimax(depth - 1, alpha, beta, !isMaximizingPlayer));
+                    game.undo();
+                    beta = Math.min(beta, bestMove);
+                    if (beta <= alpha) {
+                        return bestMove;
+                    }
+                }
+                return bestMove;
+            }
+        }
+
+        function getBestMove() {
+            clearThinking();
+            addThinkingStep('🤔 AI is analyzing the position...', 'analyzing');
+            
+            var possibleMoves = game.moves();
+            addThinkingStep('📋 Found ' + possibleMoves.length + ' possible moves', 'analyzing');
+
+            var bestMove = null;
+            var bestValue = -9999;
+
+            addThinkingStep('🔍 Evaluating each move (Depth: ' + difficulty + ')...', 'evaluating');
+
+            for (var i = 0; i < possibleMoves.length; i++) {
+                var move = possibleMoves[i];
+                game.move(move);
+                var boardValue = minimax(difficulty, -10000, 10000, false);
+                game.undo();
+
+                if (boardValue >= bestValue) {
+                    bestValue = boardValue;
+                    bestMove = move;
+                }
+
+                if (i % 5 === 0) {
+                    addThinkingStep('⚡ Analyzed ' + (i + 1) + '/' + possibleMoves.length + ' moves...', 'evaluating');
+                }
+            }
+
+            addThinkingStep('💡 Best move found: ' + bestMove + ' (Score: ' + bestValue + ')', 'deciding');
+            addThinkingStep('✅ Making move: ' + bestMove, 'deciding');
+
+            return bestMove;
+        }
+
+        function makeAIMove() {
+            var bestMove = getBestMove();
+            
+            if (bestMove) {
+                var moveObj = game.move(bestMove);
+                board.position(game.fen());
+                
+                if (moveObj.captured) {
+                    capturedCount++;
+                }
+                
+                moveCount++;
+                addMoveToHistory(moveObj);
+                updateStatus();
+            }
+        }
+
+        function addMoveToHistory(move) {
+            var moveNum = Math.ceil(moveCount / 2);
+            var moveText = moveNum + '. ' + move.san;
+            var color = move.color === 'w' ? '⚪' : '⚫';
+            
+            moveHistory.unshift({
+                num: moveNum,
+                text: moveText,
+                color: color
+            });
+
+            updateMoveHistory();
+        }
+
+        function updateMoveHistory() {
+            var html = '';
+            for (var i = 0; i < Math.min(moveHistory.length, 10); i++) {
+                html += '<div class="move-item">';
+                html += '<span>' + moveHistory[i].color + ' ' + moveHistory[i].text + '</span>';
+                html += '</div>';
+            }
+            $('#moveHistory').html(html || '<div style="text-align: center; color: #999;">No moves yet</div>');
+        }
+
+        function onDragStart(source, piece, position, orientation) {
+            if (game.game_over()) return false;
+            if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
+                (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
+                return false;
+            }
+        }
+
+        function onDrop(source, target) {
+            var move = game.move({
+                from: source,
+                to: target,
+                promotion: 'q'
+            });
+
+            if (move === null) return 'snapback';
+
+            if (move.captured) {
+                capturedCount++;
+            }
+
+            moveCount++;
+            addMoveToHistory(move);
+            updateStatus();
+
+            window.setTimeout(makeAIMove, 500);
+        }
+
+        function onSnapEnd() {
+            board.position(game.fen());
+        }
+
+        function newGame() {
+            game.reset();
+            board.start();
+            moveCount = 0;
+            capturedCount = 0;
+            moveHistory = [];
+            clearThinking();
+            addThinkingStep('🎮 New game started! You play as White.', 'analyzing');
+            updateStatus();
+            updateMoveHistory();
+        }
+
+        function undoMove() {
+            if (moveCount >= 2) {
+                game.undo();
+                game.undo();
+                board.position(game.fen());
+                moveCount -= 2;
+                moveHistory.splice(0, 2);
+                updateStatus();
+                updateMoveHistory();
+                clearThinking();
+                addThinkingStep('↩️ Last move undone', 'analyzing');
+            }
+        }
+
+        function toggleDifficulty() {
+            difficulty = (difficulty % 3) + 1;
+            var levels = ['Easy', 'Medium', 'Hard'];
+            $('#difficultyLevel').text(levels[difficulty - 1]);
+            addThinkingStep('⚙️ Difficulty changed to: ' + levels[difficulty - 1], 'analyzing');
+        }
+
+        var config = {
+            draggable: true,
+            position: 'start',
+            onDragStart: onDragStart,
+            onDrop: onDrop,
+            onSnapEnd: onSnapEnd,
+            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+        };
+
+        board = Chessboard('myBoard', config);
+        updateStatus();
+        addThinkingStep('👋 Welcome to Bhindi Chess AI!', 'analyzing');
+        addThinkingStep('🎯 Make your first move to begin', 'analyzing');
+    </script>
+</body>
+</html>
